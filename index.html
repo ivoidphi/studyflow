@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="StudyFlow" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="description" content="Minimal task & note app for college students" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <title>StudyFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="logo">SF</span>
+        <span class="logo-text">StudyFlow</span>
+      </div>
+      <div class="topbar-right">
+        <span class="sync-status" id="syncStatus" title="Sync status"></span>
+        <button class="icon-btn" id="accountBtn" title="Account">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </button>
+        <button class="icon-btn" id="filterBtn" title="Filter">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Filter bar -->
+    <div class="filter-bar" id="filterBar" style="display:none">
+      <div class="filter-row">
+        <span class="filter-label">Priority</span>
+        <div class="filter-chips">
+          <button class="chip active" data-filter="priority" data-val="all">All</button>
+          <button class="chip" data-filter="priority" data-val="high">🔴 High</button>
+          <button class="chip" data-filter="priority" data-val="medium">🟡 Med</button>
+          <button class="chip" data-filter="priority" data-val="low">🟢 Low</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Status</span>
+        <div class="filter-chips">
+          <button class="chip active" data-filter="status" data-val="all">All</button>
+          <button class="chip" data-filter="status" data-val="pending">Pending</button>
+          <button class="chip" data-filter="status" data-val="done">Done</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <input type="text" id="tagSearch" class="tag-input" placeholder="Search by tag..." />
+      </div>
+    </div>
+
+    <!-- Task list -->
+    <main class="task-list" id="taskList">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📚</div>
+        <p>No tasks yet.<br/>Tap <strong>+</strong> to get started.</p>
+      </div>
+    </main>
+
+    <!-- FAB -->
+    <button class="fab" id="addBtn" title="Add task">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- ── AUTH MODAL ── -->
+  <div class="modal-overlay" id="authModal" style="display:none">
+    <div class="modal auth-modal">
+      <div class="modal-header" style="justify-content:center; padding-top:28px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="logo">SF</span>
+          <span class="logo-text" style="font-size:20px">StudyFlow</span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="signin">Sign In</button>
+          <button class="auth-tab" data-tab="signup">Sign Up</button>
+        </div>
+
+        <div id="signinTab">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="signinEmail" placeholder="you@email.com" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="signinPassword" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <p class="auth-error" id="signinError"></p>
+          <button class="btn-primary full-width" id="signinBtn">Sign In</button>
+          <div class="auth-divider">or</div>
+          <button class="btn-ghost full-width" id="skipAuthBtn">Use locally only</button>
+        </div>
+
+        <div id="signupTab" style="display:none">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="signupEmail" placeholder="you@email.com" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label>Password <span class="hint">(min 6 chars)</span></label>
+            <input type="password" id="signupPassword" placeholder="••••••••" autocomplete="new-password" />
+          </div>
+          <p class="auth-error" id="signupError"></p>
+          <button class="btn-primary full-width" id="signupBtn">Create Account</button>
+          <div class="auth-divider">or</div>
+          <button class="btn-ghost full-width" id="skipAuthBtn2">Use locally only</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ACCOUNT MODAL ── -->
+  <div class="modal-overlay" id="accountModal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Account</h2>
+        <button class="icon-btn" id="closeAccountModal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <div id="accountLoggedIn" style="display:none">
+          <div class="account-info">
+            <div class="account-avatar" id="accountAvatar"></div>
+            <div>
+              <div class="account-email" id="accountEmail"></div>
+              <div class="account-badge">☁️ Cloud sync active</div>
+            </div>
+          </div>
+          <div class="account-stats" id="accountStats"></div>
+          <div class="form-group" style="margin-top:16px">
+            <label>Migrate local tasks</label>
+            <p class="sync-hint" style="margin-bottom:8px">Had tasks before signing in? Merge them into your cloud account.</p>
+            <button class="btn-secondary full-width" id="migrateLocalBtn">Import Local Tasks → Cloud</button>
+          </div>
+          <button class="btn-danger full-width" id="signOutBtn" style="margin-top:8px">Sign Out</button>
+        </div>
+
+        <div id="accountLoggedOut">
+          <div class="local-only-banner">
+            <span style="font-size:24px">💾</span>
+            <div>
+              <strong>Local storage only</strong>
+              <p>Tasks are saved on this device. Sign in to sync across all your devices automatically.</p>
+            </div>
+          </div>
+          <button class="btn-primary full-width" id="openAuthFromAccount">Sign In / Sign Up</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TASK MODAL ── -->
+  <div class="modal-overlay" id="taskModal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Task</h2>
+        <button class="icon-btn" id="closeModal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="taskTitle" placeholder="e.g., Watch Lecture 5" />
+        </div>
+        <div class="form-group">
+          <label>Link URL <span class="hint">(optional — title becomes clickable)</span></label>
+          <input type="url" id="taskUrl" placeholder="https://youtube.com/..." />
+        </div>
+        <div class="form-group">
+          <label>Deadline</label>
+          <input type="datetime-local" id="taskDeadline" />
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <div class="priority-group">
+            <button class="priority-btn" data-p="high">🔴 High</button>
+            <button class="priority-btn active" data-p="medium">🟡 Medium</button>
+            <button class="priority-btn" data-p="low">🟢 Low</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tags <span class="hint">(comma separated)</span></label>
+          <input type="text" id="taskTags" placeholder="math, exam, urgent" />
+        </div>
+        <div class="form-group">
+          <label>Checklist</label>
+          <div id="checklistItems"></div>
+          <button class="add-subtask-btn" id="addSubtask">+ Add item</button>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="taskNotes" rows="3" placeholder="Any extra notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-danger" id="deleteTaskBtn" style="display:none">Delete</button>
+        <button class="btn-secondary" id="cancelModal">Cancel</button>
+        <button class="btn-primary" id="saveTask">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
