@@ -4,8 +4,8 @@
 // ║  CONFIGURATION — fill these in!          ║
 // ║  Get from: Supabase → Settings → API     ║
 // ╚══════════════════════════════════════════╝
-const SUPABASE_URL = 'https://wwwqzfxglbrdesmmxtwz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3d3F6ZnhnbGJyZGVzbW14dHd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NTYwMTEsImV4cCI6MjA4OTEzMjAxMX0.1OtfgtIajvMGu8kJujuYMlsEt-RsR5NB5yHm1nthj8I';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key-here';
 
 // ── SUPABASE CLIENT ──
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -274,12 +274,16 @@ async function migrateLocalToCloud() {
 // ─────────────────────────────────────────
 
 function setSyncStatus(state) {
-  const dot = document.getElementById('syncStatus');
-  dot.className = 'sync-status';
-  if (state === 'ok') { dot.classList.add('sync-ok'); dot.title = 'Cloud synced'; }
-  else if (state === 'syncing') { dot.classList.add('sync-syncing'); dot.title = 'Syncing...'; }
-  else if (state === 'error') { dot.classList.add('sync-error'); dot.title = 'Sync error (offline?)'; }
-  else { dot.title = 'Local only'; }
+  // Update both desktop sidebar dot and mobile topbar dot
+  ['syncStatus', 'syncStatusMobile'].forEach(id => {
+    const dot = document.getElementById(id);
+    if (!dot) return;
+    dot.className = 'sync-status';
+    if (state === 'ok')      { dot.classList.add('sync-ok');      dot.title = 'Cloud synced'; }
+    else if (state === 'syncing') { dot.classList.add('sync-syncing'); dot.title = 'Syncing...'; }
+    else if (state === 'error')   { dot.classList.add('sync-error');   dot.title = 'Sync error (offline?)'; }
+    else { dot.title = 'Local only'; }
+  });
 }
 
 // ─────────────────────────────────────────
@@ -661,10 +665,6 @@ function updateAccountUI() {
   }
 }
 
-document.getElementById('accountBtn').addEventListener('click', () => {
-  updateAccountUI();
-  document.getElementById('accountModal').style.display = 'flex';
-});
 document.getElementById('closeAccountModal').addEventListener('click', () => {
   document.getElementById('accountModal').style.display = 'none';
 });
@@ -682,9 +682,15 @@ document.getElementById('accountModal').addEventListener('click', e => {
 // ─────────────────────────────────────────
 
 let filterVisible = false;
-document.getElementById('filterBtn').addEventListener('click', () => {
+function toggleFilter() {
   filterVisible = !filterVisible;
   document.getElementById('filterBar').style.display = filterVisible ? 'block' : 'none';
+}
+
+// Wire all filter buttons (mobile topbar, desktop sidebar, desktop topbar)
+['filterBtnMobile', 'filterBtnDesktop', 'filterBtnDesktop2'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', toggleFilter);
 });
 
 document.querySelectorAll('.chip').forEach(chip => {
@@ -703,10 +709,56 @@ document.getElementById('tagSearch').addEventListener('input', e => {
 });
 
 // ─────────────────────────────────────────
+// SIDEBAR NAV (desktop quick filters)
+// ─────────────────────────────────────────
+
+const navBtns = document.querySelectorAll('.nav-btn[id^="nav"]');
+function setActiveNav(id) {
+  navBtns.forEach(b => b.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  // Update desktop title
+  const titles = { navAll: 'All tasks', navPending: 'Pending', navDone: 'Done', navHigh: 'High priority' };
+  const titleEl = document.getElementById('desktopTitle');
+  if (titleEl) titleEl.textContent = titles[id] || 'Tasks';
+}
+
+document.getElementById('navAll')?.addEventListener('click', () => {
+  filters.status = 'all'; filters.priority = 'all';
+  setActiveNav('navAll'); renderTasks();
+});
+document.getElementById('navPending')?.addEventListener('click', () => {
+  filters.status = 'pending'; filters.priority = 'all';
+  setActiveNav('navPending'); renderTasks();
+});
+document.getElementById('navDone')?.addEventListener('click', () => {
+  filters.status = 'done'; filters.priority = 'all';
+  setActiveNav('navDone'); renderTasks();
+});
+document.getElementById('navHigh')?.addEventListener('click', () => {
+  filters.status = 'all'; filters.priority = 'high';
+  setActiveNav('navHigh'); renderTasks();
+});
+
+// ─────────────────────────────────────────
 // EVENT BINDINGS
 // ─────────────────────────────────────────
 
-document.getElementById('addBtn').addEventListener('click', openAddModal);
+// All "add" buttons — mobile FAB, sidebar, desktop topbar
+['addBtn', 'addBtnDesktop', 'addBtnDesktop2'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', openAddModal);
+});
+
+// All "account" buttons — mobile topbar, sidebar
+['accountBtnMobile', 'accountBtnDesktop'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => {
+    updateAccountUI();
+    document.getElementById('accountModal').style.display = 'flex';
+  });
+});
+
 document.getElementById('closeModal').addEventListener('click', closeTaskModal);
 document.getElementById('cancelModal').addEventListener('click', closeTaskModal);
 document.getElementById('saveTask').addEventListener('click', saveTask);
