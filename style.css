@@ -170,10 +170,10 @@ body {
 
 /* ── TASK CARD ── */
 .task-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
+  background: #111111;
+  border: 1px solid #333333;
   border-radius: var(--radius);
-  padding: 13px 15px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
   position: relative;
@@ -184,9 +184,9 @@ body {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.task-card:hover  { border-color: var(--border2); background: var(--bg3); }
+.task-card:hover  { border-color: #555; background: #181818; }
 .task-card:active { transform: scale(0.99); }
-.task-card.done   { opacity: 0.38; }
+.task-card.done   { opacity: 0.35; }
 .task-card.done .task-title { text-decoration: line-through; }
 
 /* Left accent bar */
@@ -204,8 +204,8 @@ body {
 }
 .task-title-wrap { flex: 1; min-width: 0; }
 .task-title {
-  font-size: 14px; font-weight: 400; letter-spacing: -0.1px;
-  line-height: 1.4; word-break: break-word; color: var(--text);
+  font-size: 15px; font-weight: 500; letter-spacing: -0.2px;
+  line-height: 1.4; word-break: break-word; color: #f5f5f5;
 }
 .task-title a { color: var(--white); text-decoration: underline; text-decoration-color: var(--border2); text-underline-offset: 3px; }
 .task-title a:hover { text-decoration-color: var(--white); }
@@ -215,7 +215,7 @@ body {
   margin-top: 7px; margin-left: 8px; align-items: center;
 }
 .task-deadline {
-  font-family: var(--font); font-size: 10px; color: var(--text2);
+  font-family: var(--font); font-size: 11px; color: #aaaaaa;
   display: flex; align-items: center; gap: 3px; letter-spacing: 0.02em;
 }
 .task-deadline.overdue { color: var(--high); }
@@ -823,3 +823,52 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
   margin-left: 8px;
   margin-top: 5px;
 }
+
+/* ── DEADLINE PICKER ── */
+.deadline-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.deadline-picker input[type="number"] {
+  width: 72px;
+  flex-shrink: 0;
+  text-align: center;
+  padding: 9px 8px;
+  -moz-appearance: textfield;
+}
+.deadline-picker input[type="number"]::-webkit-outer-spin-button,
+.deadline-picker input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+.deadline-picker select {
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 10px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.deadline-preview {
+  font-family: var(--font);
+  font-size: 12px;
+  color: #aaaaaa;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.deadline-clear {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--text3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  letter-spacing: 0.02em;
+  transition: color 0.12s;
+  margin-top: 2px;
+}
+.deadline-clear:hover { color: var(--high); }

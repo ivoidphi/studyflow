@@ -24,39 +24,34 @@ let isSyncing = false;
 const TASK_TYPES = {
   assignment: {
     icon: '📝', label: 'Assignment',
-    fields: ['url', 'deadline', 'priority', 'tags', 'checklist', 'notes'],
+    fields: ['url', 'deadline', 'checklist', 'notes'],
     titlePlaceholder: 'e.g., Essay on WWI — History 101',
-    deadlineLabel: 'Due date', notesLabel: 'Notes',
-    defaultPriority: 'high',
+    deadlineLabel: 'Due in', notesLabel: 'Notes',
   },
   todo: {
     icon: '✅', label: 'To-do',
-    fields: ['deadline', 'priority', 'tags', 'checklist', 'notes'],
+    fields: ['deadline', 'checklist', 'notes'],
     titlePlaceholder: 'e.g., Buy textbook for Chem',
-    deadlineLabel: 'Deadline (optional)', notesLabel: 'Notes',
-    defaultPriority: 'medium',
+    deadlineLabel: 'Due in', notesLabel: 'Notes',
   },
   note: {
     icon: '🗒️', label: 'Note',
-    fields: ['tags', 'notes'],
+    fields: ['notes'],
     titlePlaceholder: 'e.g., Key points from Lecture 3',
     notesLabel: 'Content',
-    defaultPriority: 'low',
   },
   watchlater: {
     icon: '▶️', label: 'Watch later',
-    fields: ['url', 'tags', 'notes'],
+    fields: ['url', 'notes'],
     titlePlaceholder: 'e.g., MIT OCW Linear Algebra',
     urlLabel: 'Link (YouTube, article, etc.)',
     notesLabel: 'Why save it?',
-    defaultPriority: 'low',
   },
   reminder: {
     icon: '🔔', label: 'Reminder',
     fields: ['deadline'],
     titlePlaceholder: 'e.g., Register for next semester',
-    deadlineLabel: 'When',
-    defaultPriority: 'medium',
+    deadlineLabel: 'Remind me in',
   },
 };
 
@@ -490,13 +485,6 @@ function buildTaskCard(task) {
     }
   }
 
-  (task.tags || []).slice(0, 4).forEach(tag => {
-    const t = document.createElement('span');
-    t.className = 'tag';
-    t.textContent = tag;
-    meta.appendChild(t);
-  });
-
   if (meta.children.length) card.appendChild(meta);
 
   // Type badge
@@ -527,6 +515,62 @@ function buildTaskCard(task) {
 }
 
 // ─────────────────────────────────────────
+// DEADLINE PICKER HELPERS
+// ─────────────────────────────────────────
+
+function getDeadlineISO() {
+  const num  = parseInt(document.getElementById('deadlineNum').value);
+  const unit = document.getElementById('deadlineUnit').value;
+  if (!num || num < 1) return null;
+  const d = new Date();
+  if (unit === 'days')   d.setDate(d.getDate() + num);
+  if (unit === 'weeks')  d.setDate(d.getDate() + num * 7);
+  if (unit === 'months') d.setMonth(d.getMonth() + num);
+  d.setHours(23, 59, 0, 0);
+  return d.toISOString();
+}
+
+function updateDeadlinePreview() {
+  const num  = parseInt(document.getElementById('deadlineNum').value);
+  const unit = document.getElementById('deadlineUnit').value;
+  const preview  = document.getElementById('deadlinePreview');
+  const clearBtn = document.getElementById('deadlineClear');
+  if (!num || num < 1) {
+    preview.textContent = '';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  const d = new Date();
+  if (unit === 'days')   d.setDate(d.getDate() + num);
+  if (unit === 'weeks')  d.setDate(d.getDate() + num * 7);
+  if (unit === 'months') d.setMonth(d.getMonth() + num);
+  preview.textContent = `→ ${d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}`;
+  clearBtn.style.display = 'block';
+}
+
+function resetDeadlinePicker() {
+  document.getElementById('deadlineNum').value  = '';
+  document.getElementById('deadlineUnit').value = 'days';
+  document.getElementById('deadlinePreview').textContent = '';
+  document.getElementById('deadlineClear').style.display = 'none';
+}
+
+function restoreDeadlinePicker(isoDate) {
+  if (!isoDate) { resetDeadlinePicker(); return; }
+  const d = new Date(isoDate);
+  const diffDays = Math.round((d - new Date()) / 86400000);
+  document.getElementById('deadlineNum').value  = diffDays > 0 ? diffDays : '';
+  document.getElementById('deadlineUnit').value = 'days';
+  document.getElementById('deadlinePreview').textContent =
+    `→ ${d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}`;
+  document.getElementById('deadlineClear').style.display = 'block';
+}
+
+document.getElementById('deadlineNum').addEventListener('input', updateDeadlinePreview);
+document.getElementById('deadlineUnit').addEventListener('change', updateDeadlinePreview);
+document.getElementById('deadlineClear').addEventListener('click', resetDeadlinePicker);
+
+// ─────────────────────────────────────────
 // TASK CRUD
 // ─────────────────────────────────────────
 
@@ -549,11 +593,9 @@ async function saveTask() {
     return;
   }
 
-  const url = document.getElementById('taskUrl').value.trim();
-  const deadline = document.getElementById('taskDeadline').value;
-  const notes = document.getElementById('taskNotes').value.trim();
-  const tags = document.getElementById('taskTags').value
-    .split(',').map(t => t.trim()).filter(Boolean);
+  const url      = document.getElementById('taskUrl').value.trim();
+  const notes    = document.getElementById('taskNotes').value.trim();
+  const deadline = getDeadlineISO(); // from picker
 
   const checklist = [];
   document.querySelectorAll('#checklistItems .checklist-item').forEach(row => {
@@ -569,16 +611,15 @@ async function saveTask() {
     if (task) {
       Object.assign(task, {
         title, url, type: currentType,
-        deadline: deadline ? new Date(deadline).toISOString() : null,
-        priority: selectedPriority, tags, checklist, notes,
+        deadline, checklist, notes,
         updatedAt: now,
       });
     }
   } else {
     tasks.unshift({
       id: uid(), title, url, type: currentType,
-      deadline: deadline ? new Date(deadline).toISOString() : null,
-      priority: selectedPriority, tags, checklist, notes,
+      deadline, checklist, notes,
+      priority: 'medium', tags: [],
       done: false, createdAt: now, updatedAt: now,
     });
   }
@@ -637,27 +678,18 @@ function applyTaskType(type) {
   const cfg = TASK_TYPES[type] || TASK_TYPES.todo;
   currentType = type;
 
-  // Show/hide each field section
   document.querySelectorAll('.task-field').forEach(el => {
-    const field = el.dataset.field;
-    el.style.display = cfg.fields.includes(field) ? 'flex' : 'none';
+    el.style.display = cfg.fields.includes(el.dataset.field) ? 'flex' : 'none';
   });
 
-  // Update labels and placeholders
   document.getElementById('taskTitle').placeholder = cfg.titlePlaceholder || 'Title';
   if (cfg.urlLabel)      document.getElementById('urlLabel').textContent      = cfg.urlLabel;
   if (cfg.deadlineLabel) document.getElementById('deadlineLabel').textContent = cfg.deadlineLabel;
   if (cfg.notesLabel)    document.getElementById('notesLabel').textContent    = cfg.notesLabel;
 
-  // Notes textarea bigger for note type
   document.getElementById('taskNotes').rows = (type === 'note') ? 8 : 4;
-
-  // Icon + title
   document.getElementById('modalTypeIcon').textContent = cfg.icon;
   document.getElementById('modalTitle').textContent = editingId ? `Edit ${cfg.label}` : `New ${cfg.label}`;
-
-  // Default priority
-  setSelectedPriority(cfg.defaultPriority || 'medium');
 }
 
 // ─────────────────────────────────────────
@@ -668,11 +700,10 @@ function openAddModal(type = 'todo') {
   editingId = null;
   document.getElementById('taskTitle').value   = '';
   document.getElementById('taskUrl').value     = '';
-  document.getElementById('taskDeadline').value = '';
-  document.getElementById('taskTags').value    = '';
   document.getElementById('taskNotes').value   = '';
   document.getElementById('deleteTaskBtn').style.display = 'none';
   document.getElementById('checklistItems').innerHTML = '';
+  resetDeadlinePicker();
   applyTaskType(type);
   taskModal.style.display = 'flex';
   setTimeout(() => document.getElementById('taskTitle').focus(), 120);
@@ -683,22 +714,11 @@ function openEditModal(id) {
   if (!task) return;
   editingId = id;
   applyTaskType(task.type || 'todo');
-  document.getElementById('taskTitle').value   = task.title  || '';
-  document.getElementById('taskUrl').value     = task.url    || '';
-  document.getElementById('taskNotes').value   = task.notes  || '';
-  document.getElementById('taskTags').value    = (task.tags  || []).join(', ');
+  document.getElementById('taskTitle').value = task.title  || '';
+  document.getElementById('taskUrl').value   = task.url    || '';
+  document.getElementById('taskNotes').value = task.notes  || '';
   document.getElementById('deleteTaskBtn').style.display = 'block';
-
-  if (task.deadline) {
-    const d = new Date(task.deadline);
-    const pad = n => String(n).padStart(2, '0');
-    document.getElementById('taskDeadline').value =
-      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  } else {
-    document.getElementById('taskDeadline').value = '';
-  }
-
-  setSelectedPriority(task.priority || 'medium');
+  restoreDeadlinePicker(task.deadline);
   document.getElementById('checklistItems').innerHTML = '';
   (task.checklist || []).forEach(item => addChecklistRow(item.text, item.done));
   taskModal.style.display = 'flex';

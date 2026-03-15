@@ -305,26 +305,19 @@
         <input type="url" id="taskUrl" placeholder="https://youtube.com/..." />
       </div>
 
-      <!-- Deadline — assignment, reminder, todo (optional) -->
+      <!-- Deadline — assignment, reminder, todo -->
       <div class="form-group task-field" data-field="deadline">
-        <label id="deadlineLabel">Deadline</label>
-        <input type="datetime-local" id="taskDeadline" />
-      </div>
-
-      <!-- Priority — assignment, todo -->
-      <div class="form-group task-field" data-field="priority">
-        <label>Priority</label>
-        <div class="priority-group">
-          <button class="priority-btn" data-p="high">🔴 High</button>
-          <button class="priority-btn active" data-p="medium">⚪ Medium</button>
-          <button class="priority-btn" data-p="low">⬛ Low</button>
+        <label id="deadlineLabel">Due in</label>
+        <div class="deadline-picker">
+          <input type="number" id="deadlineNum" min="1" max="365" placeholder="2" />
+          <select id="deadlineUnit">
+            <option value="days">days</option>
+            <option value="weeks">weeks</option>
+            <option value="months">months</option>
+          </select>
+          <span class="deadline-preview" id="deadlinePreview"></span>
         </div>
-      </div>
-
-      <!-- Tags — note, assignment, todo -->
-      <div class="form-group task-field" data-field="tags">
-        <label>Tags <span class="hint">(comma separated)</span></label>
-        <input type="text" id="taskTags" placeholder="math, exam, lecture" />
+        <button class="deadline-clear" id="deadlineClear" style="display:none">✕ Clear date</button>
       </div>
 
       <!-- Checklist — todo, assignment -->
