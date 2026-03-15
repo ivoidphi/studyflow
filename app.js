@@ -4,8 +4,8 @@
 // ║  CONFIGURATION — fill these in!          ║
 // ║  Get from: Supabase → Settings → API     ║
 // ╚══════════════════════════════════════════╝
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key-here';
+const SUPABASE_URL = 'https://wwwqzfxglbrdesmmxtwz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3d3F6ZnhnbGJyZGVzbW14dHd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NTYwMTEsImV4cCI6MjA4OTEzMjAxMX0.1OtfgtIajvMGu8kJujuYMlsEt-RsR5NB5yHm1nthj8I';
 
 // ── SUPABASE CLIENT ──
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
