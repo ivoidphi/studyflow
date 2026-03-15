@@ -1019,3 +1019,30 @@ init();
 
 // Refresh deadline countdowns every minute
 setInterval(renderTasks, 60000);
+
+// ─────────────────────────────────────────
+// iOS KEYBOARD — scroll focused input into view
+// ─────────────────────────────────────────
+// When the keyboard appears on iOS, the viewport shrinks but
+// the modal doesn't scroll to the focused field automatically.
+// This nudges the focused element into view after a short delay.
+
+function scrollInputIntoView(e) {
+  const el = e.target;
+  if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return;
+  setTimeout(() => {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 320); // wait for keyboard animation to finish
+}
+
+document.addEventListener('focusin', scrollInputIntoView);
+
+// Prevent the whole page from scrolling when a modal is open
+// (stops the chaotic jump on iOS)
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('touchmove', e => {
+    // Allow scroll inside .modal-body, block it on the overlay itself
+    if (e.target.closest('.modal-body') || e.target.closest('.type-picker-body')) return;
+    e.preventDefault();
+  }, { passive: false });
+});
