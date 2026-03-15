@@ -235,30 +235,82 @@
 </div>
 
 <!-- ════════════════════════════════
-     TASK MODAL
+     TYPE PICKER MODAL
+     ════════════════════════════════ -->
+<div class="modal-overlay" id="typePickerModal" style="display:none">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>What are you adding?</h2>
+      <button class="icon-btn" id="closeTypePicker">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body type-picker-body">
+      <button class="type-btn" data-type="assignment">
+        <span class="type-icon">📝</span>
+        <span class="type-label">Assignment</span>
+        <span class="type-desc">Due date, priority, checklist</span>
+      </button>
+      <button class="type-btn" data-type="todo">
+        <span class="type-icon">✅</span>
+        <span class="type-label">To-do</span>
+        <span class="type-desc">Quick task with subtasks</span>
+      </button>
+      <button class="type-btn" data-type="note">
+        <span class="type-icon">🗒️</span>
+        <span class="type-label">Note</span>
+        <span class="type-desc">Free-form text & tags</span>
+      </button>
+      <button class="type-btn" data-type="watchlater">
+        <span class="type-icon">▶️</span>
+        <span class="type-label">Watch later</span>
+        <span class="type-desc">Link + title to revisit</span>
+      </button>
+      <button class="type-btn" data-type="reminder">
+        <span class="type-icon">🔔</span>
+        <span class="type-label">Reminder</span>
+        <span class="type-desc">Title + date & time</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     TASK FORM MODAL
      ════════════════════════════════ -->
 <div class="modal-overlay" id="taskModal" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="modalTitle">New Task</h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="modalTypeIcon" style="font-size:18px"></span>
+        <h2 id="modalTitle">New Task</h2>
+      </div>
       <button class="icon-btn" id="closeModal">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div class="modal-body">
+
+      <!-- ALWAYS visible -->
       <div class="form-group">
-        <label>Title</label>
+        <label id="titleLabel">Title</label>
         <input type="text" id="taskTitle" placeholder="e.g., Watch Lecture 5" />
       </div>
-      <div class="form-group">
-        <label>Link URL <span class="hint">(optional)</span></label>
+
+      <!-- URL — watchlater, assignment (optional) -->
+      <div class="form-group task-field" data-field="url">
+        <label id="urlLabel">Link URL</label>
         <input type="url" id="taskUrl" placeholder="https://youtube.com/..." />
       </div>
-      <div class="form-group">
-        <label>Deadline</label>
+
+      <!-- Deadline — assignment, reminder, todo (optional) -->
+      <div class="form-group task-field" data-field="deadline">
+        <label id="deadlineLabel">Deadline</label>
         <input type="datetime-local" id="taskDeadline" />
       </div>
-      <div class="form-group">
+
+      <!-- Priority — assignment, todo -->
+      <div class="form-group task-field" data-field="priority">
         <label>Priority</label>
         <div class="priority-group">
           <button class="priority-btn" data-p="high">🔴 High</button>
@@ -266,19 +318,26 @@
           <button class="priority-btn" data-p="low">⬛ Low</button>
         </div>
       </div>
-      <div class="form-group">
+
+      <!-- Tags — note, assignment, todo -->
+      <div class="form-group task-field" data-field="tags">
         <label>Tags <span class="hint">(comma separated)</span></label>
-        <input type="text" id="taskTags" placeholder="math, exam, urgent" />
+        <input type="text" id="taskTags" placeholder="math, exam, lecture" />
       </div>
-      <div class="form-group">
+
+      <!-- Checklist — todo, assignment -->
+      <div class="form-group task-field" data-field="checklist">
         <label>Checklist</label>
         <div id="checklistItems"></div>
         <button class="add-subtask-btn" id="addSubtask">+ Add item</button>
       </div>
-      <div class="form-group">
-        <label>Notes</label>
-        <textarea id="taskNotes" rows="3" placeholder="Any extra notes..."></textarea>
+
+      <!-- Notes — note, assignment, todo -->
+      <div class="form-group task-field" data-field="notes">
+        <label id="notesLabel">Notes</label>
+        <textarea id="taskNotes" rows="4" placeholder="Write anything..."></textarea>
       </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn-danger" id="deleteTaskBtn" style="display:none">Delete</button>

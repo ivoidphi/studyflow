@@ -14,10 +14,51 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let tasks = [];
 let currentUser = null;
 let editingId = null;
+let currentType = 'todo';
 let selectedPriority = 'medium';
 let filters = { priority: 'all', status: 'all', tag: '' };
 let realtimeChannel = null;
 let isSyncing = false;
+
+// ── TASK TYPE DEFINITIONS ──
+const TASK_TYPES = {
+  assignment: {
+    icon: '📝', label: 'Assignment',
+    fields: ['url', 'deadline', 'priority', 'tags', 'checklist', 'notes'],
+    titlePlaceholder: 'e.g., Essay on WWI — History 101',
+    deadlineLabel: 'Due date', notesLabel: 'Notes',
+    defaultPriority: 'high',
+  },
+  todo: {
+    icon: '✅', label: 'To-do',
+    fields: ['deadline', 'priority', 'tags', 'checklist', 'notes'],
+    titlePlaceholder: 'e.g., Buy textbook for Chem',
+    deadlineLabel: 'Deadline (optional)', notesLabel: 'Notes',
+    defaultPriority: 'medium',
+  },
+  note: {
+    icon: '🗒️', label: 'Note',
+    fields: ['tags', 'notes'],
+    titlePlaceholder: 'e.g., Key points from Lecture 3',
+    notesLabel: 'Content',
+    defaultPriority: 'low',
+  },
+  watchlater: {
+    icon: '▶️', label: 'Watch later',
+    fields: ['url', 'tags', 'notes'],
+    titlePlaceholder: 'e.g., MIT OCW Linear Algebra',
+    urlLabel: 'Link (YouTube, article, etc.)',
+    notesLabel: 'Why save it?',
+    defaultPriority: 'low',
+  },
+  reminder: {
+    icon: '🔔', label: 'Reminder',
+    fields: ['deadline'],
+    titlePlaceholder: 'e.g., Register for next semester',
+    deadlineLabel: 'When',
+    defaultPriority: 'medium',
+  },
+};
 
 // ─────────────────────────────────────────
 // STORAGE — smart layer: Supabase if logged
@@ -425,6 +466,15 @@ function buildTaskCard(task) {
 
   if (meta.children.length) card.appendChild(meta);
 
+  // Type badge
+  const typeCfg = TASK_TYPES[task.type];
+  if (typeCfg) {
+    const badge = document.createElement('div');
+    badge.className = 'task-type-badge';
+    badge.textContent = `${typeCfg.icon} ${typeCfg.label}`;
+    card.appendChild(badge);
+  }
+
   if (task.checklist && task.checklist.length > 0) {
     const done = task.checklist.filter(i => i.done).length;
     const total = task.checklist.length;
@@ -485,7 +535,7 @@ async function saveTask() {
     const task = tasks.find(t => t.id === editingId);
     if (task) {
       Object.assign(task, {
-        title, url,
+        title, url, type: currentType,
         deadline: deadline ? new Date(deadline).toISOString() : null,
         priority: selectedPriority, tags, checklist, notes,
         updatedAt: now,
@@ -493,7 +543,7 @@ async function saveTask() {
     }
   } else {
     tasks.unshift({
-      id: uid(), title, url,
+      id: uid(), title, url, type: currentType,
       deadline: deadline ? new Date(deadline).toISOString() : null,
       priority: selectedPriority, tags, checklist, notes,
       done: false, createdAt: now, updatedAt: now,
@@ -521,32 +571,86 @@ async function deleteTask() {
 // ─────────────────────────────────────────
 
 const taskModal = document.getElementById('taskModal');
-const checklistItems = document.getElementById('checklistItems');
 
-function openAddModal() {
+// ─────────────────────────────────────────
+// TYPE PICKER
+// ─────────────────────────────────────────
+
+const typePickerModal = document.getElementById('typePickerModal');
+
+function openTypePicker() {
+  typePickerModal.style.display = 'flex';
+}
+
+function closeTypePicker() {
+  typePickerModal.style.display = 'none';
+}
+
+document.getElementById('closeTypePicker').addEventListener('click', closeTypePicker);
+typePickerModal.addEventListener('click', e => { if (e.target === typePickerModal) closeTypePicker(); });
+
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    closeTypePicker();
+    openAddModal(btn.dataset.type);
+  });
+});
+
+// Apply type config — show/hide fields, update labels/placeholders
+function applyTaskType(type) {
+  const cfg = TASK_TYPES[type] || TASK_TYPES.todo;
+  currentType = type;
+
+  // Show/hide each field section
+  document.querySelectorAll('.task-field').forEach(el => {
+    const field = el.dataset.field;
+    el.style.display = cfg.fields.includes(field) ? 'flex' : 'none';
+  });
+
+  // Update labels and placeholders
+  document.getElementById('taskTitle').placeholder = cfg.titlePlaceholder || 'Title';
+  if (cfg.urlLabel)      document.getElementById('urlLabel').textContent      = cfg.urlLabel;
+  if (cfg.deadlineLabel) document.getElementById('deadlineLabel').textContent = cfg.deadlineLabel;
+  if (cfg.notesLabel)    document.getElementById('notesLabel').textContent    = cfg.notesLabel;
+
+  // Notes textarea bigger for note type
+  document.getElementById('taskNotes').rows = (type === 'note') ? 8 : 4;
+
+  // Icon + title
+  document.getElementById('modalTypeIcon').textContent = cfg.icon;
+  document.getElementById('modalTitle').textContent = editingId ? `Edit ${cfg.label}` : `New ${cfg.label}`;
+
+  // Default priority
+  setSelectedPriority(cfg.defaultPriority || 'medium');
+}
+
+// ─────────────────────────────────────────
+// MODAL UI
+// ─────────────────────────────────────────
+
+function openAddModal(type = 'todo') {
   editingId = null;
-  document.getElementById('modalTitle').textContent = 'New Task';
-  document.getElementById('taskTitle').value = '';
-  document.getElementById('taskUrl').value = '';
+  document.getElementById('taskTitle').value   = '';
+  document.getElementById('taskUrl').value     = '';
   document.getElementById('taskDeadline').value = '';
-  document.getElementById('taskTags').value = '';
-  document.getElementById('taskNotes').value = '';
+  document.getElementById('taskTags').value    = '';
+  document.getElementById('taskNotes').value   = '';
   document.getElementById('deleteTaskBtn').style.display = 'none';
-  checklistItems.innerHTML = '';
-  setSelectedPriority('medium');
+  document.getElementById('checklistItems').innerHTML = '';
+  applyTaskType(type);
   taskModal.style.display = 'flex';
-  setTimeout(() => document.getElementById('taskTitle').focus(), 100);
+  setTimeout(() => document.getElementById('taskTitle').focus(), 120);
 }
 
 function openEditModal(id) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
   editingId = id;
-  document.getElementById('modalTitle').textContent = 'Edit Task';
-  document.getElementById('taskTitle').value = task.title || '';
-  document.getElementById('taskUrl').value = task.url || '';
-  document.getElementById('taskNotes').value = task.notes || '';
-  document.getElementById('taskTags').value = (task.tags || []).join(', ');
+  applyTaskType(task.type || 'todo');
+  document.getElementById('taskTitle').value   = task.title  || '';
+  document.getElementById('taskUrl').value     = task.url    || '';
+  document.getElementById('taskNotes').value   = task.notes  || '';
+  document.getElementById('taskTags').value    = (task.tags  || []).join(', ');
   document.getElementById('deleteTaskBtn').style.display = 'block';
 
   if (task.deadline) {
@@ -559,7 +663,7 @@ function openEditModal(id) {
   }
 
   setSelectedPriority(task.priority || 'medium');
-  checklistItems.innerHTML = '';
+  document.getElementById('checklistItems').innerHTML = '';
   (task.checklist || []).forEach(item => addChecklistRow(item.text, item.done));
   taskModal.style.display = 'flex';
 }
@@ -744,10 +848,10 @@ document.getElementById('navHigh')?.addEventListener('click', () => {
 // EVENT BINDINGS
 // ─────────────────────────────────────────
 
-// All "add" buttons — mobile FAB, sidebar, desktop topbar
+// All "add" buttons — mobile FAB, sidebar, desktop topbar → open type picker
 ['addBtn', 'addBtnDesktop', 'addBtnDesktop2'].forEach(id => {
   const el = document.getElementById(id);
-  if (el) el.addEventListener('click', openAddModal);
+  if (el) el.addEventListener('click', openTypePicker);
 });
 
 // All "account" buttons — mobile topbar, sidebar
@@ -774,6 +878,7 @@ taskModal.addEventListener('click', e => { if (e.target === taskModal) closeTask
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeTaskModal();
+    closeTypePicker();
     closeAuthModal();
     document.getElementById('accountModal').style.display = 'none';
   }
