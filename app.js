@@ -519,8 +519,11 @@ function buildTaskCard(task) {
 // ─────────────────────────────────────────
 
 function getDeadlineISO() {
-  const num  = parseInt(document.getElementById('deadlineNum').value);
-  const unit = document.getElementById('deadlineUnit').value;
+  const numEl = document.getElementById('deadlineNum');
+  const unitEl = document.getElementById('deadlineUnit');
+  if (!numEl || !unitEl) return null;
+  const num  = parseInt(numEl.value);
+  const unit = unitEl.value;
   if (!num || num < 1) return null;
   const d = new Date();
   if (unit === 'days')   d.setDate(d.getDate() + num);
@@ -531,10 +534,13 @@ function getDeadlineISO() {
 }
 
 function updateDeadlinePreview() {
-  const num  = parseInt(document.getElementById('deadlineNum').value);
-  const unit = document.getElementById('deadlineUnit').value;
+  const numEl    = document.getElementById('deadlineNum');
+  const unitEl   = document.getElementById('deadlineUnit');
   const preview  = document.getElementById('deadlinePreview');
   const clearBtn = document.getElementById('deadlineClear');
+  if (!numEl || !unitEl || !preview || !clearBtn) return;
+  const num  = parseInt(numEl.value);
+  const unit = unitEl.value;
   if (!num || num < 1) {
     preview.textContent = '';
     clearBtn.style.display = 'none';
@@ -549,26 +555,35 @@ function updateDeadlinePreview() {
 }
 
 function resetDeadlinePicker() {
-  document.getElementById('deadlineNum').value  = '';
-  document.getElementById('deadlineUnit').value = 'days';
-  document.getElementById('deadlinePreview').textContent = '';
-  document.getElementById('deadlineClear').style.display = 'none';
+  const numEl    = document.getElementById('deadlineNum');
+  const unitEl   = document.getElementById('deadlineUnit');
+  const preview  = document.getElementById('deadlinePreview');
+  const clearBtn = document.getElementById('deadlineClear');
+  if (!numEl || !unitEl || !preview || !clearBtn) return;
+  numEl.value  = '';
+  unitEl.value = 'days';
+  preview.textContent = '';
+  clearBtn.style.display = 'none';
 }
 
 function restoreDeadlinePicker(isoDate) {
+  const numEl    = document.getElementById('deadlineNum');
+  const unitEl   = document.getElementById('deadlineUnit');
+  const preview  = document.getElementById('deadlinePreview');
+  const clearBtn = document.getElementById('deadlineClear');
+  if (!numEl || !unitEl || !preview || !clearBtn) return;
   if (!isoDate) { resetDeadlinePicker(); return; }
   const d = new Date(isoDate);
   const diffDays = Math.round((d - new Date()) / 86400000);
-  document.getElementById('deadlineNum').value  = diffDays > 0 ? diffDays : '';
-  document.getElementById('deadlineUnit').value = 'days';
-  document.getElementById('deadlinePreview').textContent =
-    `→ ${d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}`;
-  document.getElementById('deadlineClear').style.display = 'block';
+  numEl.value  = diffDays > 0 ? diffDays : '';
+  unitEl.value = 'days';
+  preview.textContent = `→ ${d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}`;
+  clearBtn.style.display = 'block';
 }
 
-document.getElementById('deadlineNum').addEventListener('input', updateDeadlinePreview);
-document.getElementById('deadlineUnit').addEventListener('change', updateDeadlinePreview);
-document.getElementById('deadlineClear').addEventListener('click', resetDeadlinePicker);
+document.getElementById('deadlineNum')?.addEventListener('input', updateDeadlinePreview);
+document.getElementById('deadlineUnit')?.addEventListener('change', updateDeadlinePreview);
+document.getElementById('deadlineClear')?.addEventListener('click', resetDeadlinePicker);
 
 // ─────────────────────────────────────────
 // TASK CRUD
