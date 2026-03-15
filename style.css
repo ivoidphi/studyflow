@@ -61,6 +61,21 @@ body {
   width: 100%;
 }
 
+/* ── HIDE DESKTOP ELEMENTS ON MOBILE ── */
+.sidebar,
+.desktop-topbar,
+.desktop-btn,
+.desktop-title { display: none; }
+
+/* main-panel is a simple full-width column on mobile */
+.main-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
 /* ── TOPBAR (mobile only, hidden on desktop) ── */
 .topbar {
   display: flex;

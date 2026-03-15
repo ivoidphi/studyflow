@@ -94,6 +94,7 @@ async function saveTasks() {
       checklist: t.checklist || [],
       notes: t.notes || null,
       done: t.done,
+      type: t.type || 'todo',
       created_at: t.createdAt,
       updated_at: t.updatedAt,
     }));
@@ -123,19 +124,7 @@ async function loadTasks() {
 
     if (error) throw error;
 
-    tasks = (data || []).map(row => ({
-      id: row.id,
-      title: row.title,
-      url: row.url,
-      deadline: row.deadline,
-      priority: row.priority,
-      tags: row.tags || [],
-      checklist: row.checklist || [],
-      notes: row.notes,
-      done: row.done,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
+    tasks = (data || []).map(rowToTask);
 
     saveLocal(tasks); // keep local cache fresh
     setSyncStatus('ok');
@@ -163,7 +152,6 @@ async function deleteFromDB(id) {
 function subscribeRealtime() {
   if (!currentUser) return;
 
-  // clean up previous channel
   if (realtimeChannel) {
     sb.removeChannel(realtimeChannel);
   }
@@ -179,11 +167,56 @@ function subscribeRealtime() {
         filter: `user_id=eq.${currentUser.id}`,
       },
       (payload) => {
-        // Another device made a change — reload
-        loadTasks();
+        const { eventType, new: newRow, old: oldRow } = payload;
+
+        if (eventType === 'DELETE') {
+          // Remove from local array immediately — no reload needed
+          tasks = tasks.filter(t => t.id !== oldRow.id);
+          saveLocal(tasks);
+          renderTasks();
+        } else if (eventType === 'INSERT') {
+          // Add if not already present
+          if (!tasks.find(t => t.id === newRow.id)) {
+            tasks.unshift(rowToTask(newRow));
+            saveLocal(tasks);
+            renderTasks();
+          }
+        } else if (eventType === 'UPDATE') {
+          // Merge — only apply if incoming is newer
+          const idx = tasks.findIndex(t => t.id === newRow.id);
+          const incoming = rowToTask(newRow);
+          if (idx === -1) {
+            tasks.unshift(incoming);
+          } else {
+            const existing = tasks[idx];
+            if (new Date(incoming.updatedAt) >= new Date(existing.updatedAt)) {
+              tasks[idx] = incoming;
+            }
+          }
+          saveLocal(tasks);
+          renderTasks();
+        }
       }
     )
     .subscribe();
+}
+
+// Convert a Supabase DB row → app task object
+function rowToTask(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    url: row.url,
+    deadline: row.deadline,
+    priority: row.priority,
+    tags: row.tags || [],
+    checklist: row.checklist || [],
+    notes: row.notes,
+    done: row.done,
+    type: row.type || 'todo',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 function unsubscribeRealtime() {
@@ -559,10 +592,13 @@ async function deleteTask() {
   if (!editingId) return;
   if (!confirm('Delete this task?')) return;
   const id = editingId;
+  // Remove from local state first
   tasks = tasks.filter(t => t.id !== id);
   closeTaskModal();
   renderTasks();
   saveLocal(tasks);
+  // Delete from DB directly — do NOT call saveTasks() here,
+  // that would upsert all remaining tasks and could race with the delete
   await deleteFromDB(id);
 }
 
